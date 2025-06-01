@@ -63,71 +63,125 @@ This file is hosted at github and can be updated as follows:
 
 ## Step 4: Set up Mr. Phelps
 
-1. Download the latest `jim-phelps-details.json` and `jim-phelps-details.md` files using the following commands:
+1. Download the latest `jim-phelps.roomode.yaml` file using the following command:
 
 ```bash
-curl https://raw.githubusercontent.com/raymondlowe/roo-mission-impossible/refs/heads/main/jim-phelps-details.json > jim-phelps-details.json
-curl https://raw.githubusercontent.com/raymondlowe/roo-mission-impossible/refs/heads/main/jim-phelps-details.md > jim-phelps-details.md
+curl https://raw.githubusercontent.com/raymondlowe/roo-mission-impossible/main/roomodes/jim-phelps.roomode.yaml -o roomodes/jim-phelps.roomode.yaml
 ```
 
-2. Download the latest `.roo/rules/rules.md` file using the following command:
+2. Activate this mode by merging it into your project-level `.roomodes` YAML file at the root of your project. If `.roomodes` does not exist, create it with the following structure:
 
+```yaml
+customModes: []
+```
+
+3. Use the provided Python script to merge any `.roomode.yaml` file from the `roomodes/` directory into `.roomodes`. This script will avoid duplicates and ensure all active modes are in the `customModes:` array.
+
+**merge_mode.py:**
+```python
+import yaml
+import sys
+import os
+
+roomodes_file = '.roomodes'
+new_mode_file = sys.argv[1]  # e.g. 'roomodes/jim-phelps.roomode.yaml'
+
+try:
+    with open(roomodes_file, 'r') as f:
+        data = yaml.safe_load(f)
+    if 'customModes' not in data:
+        data['customModes'] = []
+except FileNotFoundError:
+    data = {'customModes': []}
+
+with open(new_mode_file, 'r') as f:
+    new_mode = yaml.safe_load(f)
+
+# Avoid duplicates by slug
+if not any(m.get('slug') == new_mode.get('slug') for m in data['customModes']):
+    data['customModes'].append(new_mode)
+else:
+    print(f"Mode with slug '{new_mode.get('slug')}' already exists in .roomodes.")
+
+with open(roomodes_file, 'w') as f:
+    yaml.dump(data, f, sort_keys=False)
+```
+
+Run it as:
 ```bash
-mkdir -p .roo/rules
-curl https://raw.githubusercontent.com/raymondlowe/roo-mission-impossible/refs/heads/main/.roo/rules/rules.md > .roo/rules/rules.md
+python3 merge_mode.py roomodes/jim-phelps.roomode.yaml
 ```
 
-3. Check for the existence of a `.roomodes` file:
-   - If the file does not exist, create it by copying over the jim-phelps-details.json file to by going `cp jim-phelps-details.json .roomodes` 
-   - If the file exists, read its contents and validate that the `customModes` key exists and is an array. If not, initialize it as an empty array.
-
-Example `.roomodes` file
-```json
-{
-  "customModes": [
-    {
-      "slug": "example",
-      "name": "example",
-      "roleDefinition": "example",
-      "customInstructions": "example",
-      "groups": [
-        "read",
-        "edit",
-        "browser",
-        "command",
-        "mcp"
-      ],
-      "source": "project"
-    }
-  ]
-}
-```
-4. If jim-phelps is not already in the .roomodes file then integrate the `jim-phelps` mode into the `.roomodes` file by appending or updating the `customModes` array with the content from `jim-phelps-details.json`.
-
-5. Save the updated `.roomodes` file and validate its structure.
+4. Repeat the download and merge process for any additional agent modes you wish to activate from the `roomodes/` directory.
 
 ---
 
 ## Step 5: Set up the Tech Support agent
 
-1. Download the latest `roo-tech-support-details` `.json` and `.md` files using the following commands:
+1. Download the latest `roo-tech-support.roomode.yaml` file using the following command:
 
 ```bash
-curl https://raw.githubusercontent.com/raymondlowe/roo-mission-impossible/refs/heads/main/roo-tech-support-details.json > roo-tech-support-details.json
-curl https://raw.githubusercontent.com/raymondlowe/roo-mission-impossible/refs/heads/main/roo-tech-support-details.md > roo-tech-support-details.md
+curl https://raw.githubusercontent.com/raymondlowe/roo-mission-impossible/main/roomodes/roo-tech-support.roomode.yaml -o roomodes/roo-tech-support.roomode.yaml
 ```
-2. Check for the existence of a `.roomodes` file:
-   - If the file does not exist, create it by copying over the roo-tech-support-details.json file to by going `cp roo-tech-support-details.json .roomodes` 
-   - If the file exists, read its contents and validate that the `customModes` key exists and is an array. If not, initialize it as an empty array.
-3. If tech-support is not already in the .roomodes file then integrate the `tech-support` mode into the `.roomodes` file by appending or updating the `customModes` array with the content from `roo-tech-support-details.json`.
-4. Save the updated `.roomodes` file and validate its structure.
 
-## Step 6: Confirm Setup Completion
+2. Activate this mode by merging it into `.roomodes` using the same script:
+
+```bash
+python3 merge_mode.py roomodes/roo-tech-support.roomode.yaml
+```
+
+---
+
+## Step 6: Set up Additional Agent Modes (YAML)
+
+All agent modes should remain as individual YAML files in the `roomodes/` directory for modularity and version control. To activate any mode, merge its YAML into the `.roomodes` file using the script above. Only modes present in `.roomodes` are active.
+
+Each agent mode YAML file should include a `whenToUse` property that describes the situations or triggers for activating that mode. This helps team leaders and trainers understand when each agent is appropriate to add to a team.
+
+### Mode-Specific Instructions via Files/Directories
+
+For better organization and version control, you can provide detailed instructions for each mode using dedicated files or directories. The preferred method is to use a directory named `.roo/rules-{mode-slug}/` for each mode. For example, for the mode slug `roo-writer`, use:
+
+```
+.roo/rules-roo-writer/
+    01-style-guide.md
+    02-formatting.txt
+```
+
+Reference these files in the `customInstructions` or `roleDefinition` fields of your `.roomode.yaml` file, and instruct agents to consult them as needed.
+
+**Example YAML snippet:**
+```yaml
+slug: roo-writer
+name: Roo Writer
+roleDefinition: |
+  You are the Roo Writer, responsible for crafting compelling narratives...
+  For detailed instructions, see files in `.roo/rules-roo-writer/`.
+whenToUse: |
+  Use this mode when you need to generate, edit, or refine written content for the project, or when a writing specialist is required.
+groups: [read, edit, command, mcp]
+source: project
+customInstructions: |
+  Always collaborate with the Researcher and Editor...
+  Refer to `.roo/rules-roo-writer/` for style and formatting guidance.
+```
+
+---
+
+## Step 7: Team Assembly and Trainer Instructions
+
+- Team leaders (e.g., Jim Phelps) and trainers should activate agent modes by merging the required `.roomode.yaml` files from `roomodes/` into `.roomodes` using the provided script.
+- Trainers can create or edit agent modes by editing or adding new YAML files in `roomodes/`, then merging them into `.roomodes` as needed.
+- Only modes present in `.roomodes` are active for the project.
+
+---
+
+## Step 8: Confirm Setup Completion
 
 Output a message to the user indicating that the setup is complete. For example:
 
 ```
-Setup complete! The 'jim-phelps' mode has been successfully configured in the .roomodes file and awaits your instructions.
+Setup complete! The 'jim-phelps' mode has been successfully configured and awaits your instructions.
 ```
 
 Then change mode role to the `jim-phelps` agent mode role to begin task delegation.
